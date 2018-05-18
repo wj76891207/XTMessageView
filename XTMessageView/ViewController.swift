@@ -9,17 +9,21 @@
 import UIKit
 
 class ViewController: UIViewController {
+    
+    lazy var waveView: XTWaveView = {
+        let waveView = XTWaveView(frame: CGRect(x: 0, y: 150, width: view.bounds.width, height: 150))
+        return waveView
+    }()
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        // Do any additional setup after loading the view, typically from a nib.
+        
+        view.addSubview(waveView)
+        self.waveView.addWave()
+        
+//        Timer.scheduledTimer(withTimeInterval: 1, repeats: true) { timer in
+//            self.waveView.addWave()
+//        }
     }
-
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-
-
 }
 
