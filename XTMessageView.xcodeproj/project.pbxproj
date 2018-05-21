@@ -14,6 +14,7 @@
 		C9A0C84120AAAE350023DA6D /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C9A0C83F20AAAE350023DA6D /* Main.storyboard */; };
 		C9A0C84320AAAE350023DA6D /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C9A0C84220AAAE350023DA6D /* Assets.xcassets */; };
 		C9A0C84620AAAE350023DA6D /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C9A0C84420AAAE350023DA6D /* LaunchScreen.storyboard */; };
+		C9AE0BA220B262B700C2E397 /* XTExtentions.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9AE0BA120B262B700C2E397 /* XTExtentions.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -26,6 +27,7 @@
 		C9A0C84220AAAE350023DA6D /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		C9A0C84520AAAE350023DA6D /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C9A0C84720AAAE350023DA6D /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		C9AE0BA120B262B700C2E397 /* XTExtentions.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = XTExtentions.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -44,6 +46,7 @@
 			children = (
 				C99C300C20AC064F00C4C264 /* XTWaveView.swift */,
 				C99C301020AC27D700C4C264 /* XTWave.swift */,
+				C9AE0BA120B262B700C2E397 /* XTExtentions.swift */,
 			);
 			path = XTAudioWave;
 			sourceTree = "<group>";
@@ -152,6 +155,7 @@
 			files = (
 				C99C300D20AC064F00C4C264 /* XTWaveView.swift in Sources */,
 				C9A0C83E20AAAE350023DA6D /* ViewController.swift in Sources */,
+				C9AE0BA220B262B700C2E397 /* XTExtentions.swift in Sources */,
 				C99C301120AC27D700C4C264 /* XTWave.swift in Sources */,
 				C9A0C83C20AAAE350023DA6D /* AppDelegate.swift in Sources */,
 			);
