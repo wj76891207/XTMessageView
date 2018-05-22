@@ -11,20 +11,21 @@ import UIKit
 public class XTWaveView: UIView {
     
     public enum Style {
-        case stripe
-        case halo
-        case brick
-        case pillar
+        case stripe     // 线条状抛物线
+        case halo       // 对称的抛物线组成的色块
+        case pillar     // 柱状图
+        case brick      // 方块柱状图
+        case trace      // 带尾迹的方块柱状图
     }
     public var style = Style.stripe
     
-    public enum FlowSpeed {
-        case still
-        case low
-        case middle
-        case high
-    }
-    public var flowSpeed = FlowSpeed.still
+//    public enum FlowSpeed {
+//        case still
+//        case low
+//        case middle
+//        case high
+//    }
+//    public var flowSpeed = FlowSpeed.still
     
     private lazy var displayLink: CADisplayLink = {
         let displayLink = CADisplayLink(target: self, selector: #selector(updateWave))
@@ -43,6 +44,15 @@ public class XTWaveView: UIView {
         super.init(frame: frame)
         
         self.style = style
+        didInit()
+    }
+    
+    public required init?(coder aDecoder: NSCoder) {
+        super.init(coder: aDecoder)
+        didInit()
+    }
+    
+    private func didInit() {
         backgroundColor = UIColor.lightGray
         
         // 中间二分之一的区域用于波纹放置点
@@ -51,25 +61,22 @@ public class XTWaveView: UIView {
         if style == .pillar {
             waveW = pillarWaveW()
         }
-        else if style == .brick {
+        else if style == .brick || style == .trace {
             waveW = brickWaveW()
         }
         else {
             waveW = bounds.height
         }
         waveH = bounds.height/2
-
+        
         displayLink.add(to: .current, forMode: .defaultRunLoopMode)
-    }
-    
-    public required init?(coder aDecoder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
     }
     
     deinit {
         displayLink.invalidate()
     }
     
+    /// 添加一个随机的波纹
     public func addWave() {
         let position = UInt(arc4random_uniform(UInt32(waveMaxNumber-1)))  // 控制显示的位置
         let amplitude = CGFloat.random(min: 0.1, max: 1) // 生成一个 [0.1, 1] 之间的随机数，作为随机振幅
@@ -86,10 +93,10 @@ public class XTWaveView: UIView {
         else {
             // 创建新的wave
             let newWaveItem = XTWaveItem()
-            newWaveItem.position = 0//position
+            newWaveItem.position = position
             newWaveItem.amplitude = amplitude
             newWaveItem.narrowExp = CGFloat(arc4random_uniform(10)) + 2
-            if style == .brick || style == .pillar {
+            if style == .brick || style == .pillar || style == .trace {
                 newWaveItem.color = UIColor.white
             }
             else {
@@ -102,7 +109,7 @@ public class XTWaveView: UIView {
     
     @objc private func updateWave() {
         let riseStep: CGFloat = 0.1
-        let downStep: CGFloat = 0.002
+        let downStep: CGFloat = 0.01
         
         var removeList: [UInt] = []
         for (position, item) in renderWaveItems {
@@ -115,8 +122,8 @@ public class XTWaveView: UIView {
                 item.curRenderAmplitude = min(item.amplitude, item.curRenderAmplitude + riseStep)
             } else {
                 item.curRenderAmplitude = item.curRenderAmplitude - downStep
-//                let minAmplitude = style == .brick ? brickMinAmplitude : 0
-                let minAmplitude: CGFloat = 0
+                let minAmplitude = style == .trace ? traceMinAmplitude : 0
+//                let minAmplitude: CGFloat = 0
                 if item.curRenderAmplitude <= minAmplitude {
                     removeList.append(position)
                 }
@@ -131,20 +138,18 @@ public class XTWaveView: UIView {
 // MARK: - Draw Wave
 extension XTWaveView {
     
-    
-    
     public override func draw(_ rect: CGRect) {
         guard let context = UIGraphicsGetCurrentContext() else { return }
         
         context.setAllowsAntialiasing(true)
         
-        if style == .pillar || style == .brick {
+        if style == .pillar || style == .brick || style == .trace {
             UIColor.white.set()
             let d: CGFloat = 1   // 每条柱子显示区域两边的空隙宽度
             
             // 绘制中间的固定虚线
             context.addPath(middleDash(d))
-            context.setLineWidth(1)
+            context.setLineWidth(CGFloat.piexlOne)
             context.strokePath()
         }
         
@@ -158,6 +163,9 @@ extension XTWaveView {
                 drawPillar(withWaveItem: item)
             case .brick:
                 drawBrick(withWaveItem: item)
+            case .trace:
+                drawTrace(withWaveItem: item)
+                break
             }
         }
     }
@@ -175,7 +183,7 @@ extension XTWaveView {
         
         let y = waveMaxH*amplitude*sin(CGFloat.pi*(1+x/waveW) + (reverse ? CGFloat.pi : 0))
         let scaling: CGFloat = pow(1-pow((x-waveHW)/waveHW, 2), narrowExp)
-        return CGPoint(x: midX-waveMaxH+x, y: y*scaling+bounds.midY)
+        return CGPoint(x: midX-waveHW+x, y: y*scaling+bounds.midY)
     }
     
     /// 根据参数绘制一条抛物曲线，左右两端会以直线方式延长到视图两端
@@ -234,47 +242,72 @@ extension XTWaveView {
         
         let d: CGFloat = 1
         
+        let bricksPath = CGMutablePath()
+        
+        stride(from: 0, to: waveW, by: waveDistance).forEach { x in
+            let topPoint = paraCurvePoint(forOffsetX: x+waveDistance/2, item.position, item.curRenderAmplitude, item.narrowExp, false)
+            stride(from: bounds.midY, to: topPoint.y, by: -brickH).forEach { y in
+                if y-brickH/2 >= topPoint.y {
+                    bricksPath.addRect(CGRect(x: topPoint.x - waveDistance/2 + d, y: y-(brickH-1), width: waveDistance-2*d, height: brickH-1))
+                }
+            }
+        }
+        
+        context?.addPath(bricksPath)
+        context?.fillPath()
+    }
+    
+    private func drawTrace(withWaveItem item: XTWaveItem) {
+        item.color.set()
+        let context = UIGraphicsGetCurrentContext()
+        
+        let d: CGFloat = 1
+        
         // 主体实心的显示块
         let mainBricksPath = CGMutablePath()
-//        // 拖尾部分
-//        let tailBrickPaths = [CGMutablePath(), CGMutablePath(), CGMutablePath()]
-//        let tailNum = tailBrickPaths.count
+        // 拖尾部分
+        var tracePaths: [CGMutablePath] = []
+        for _ in 0..<traceNumber {
+            tracePaths.append(CGMutablePath())
+        }
         
         stride(from: 0, to: waveW, by: waveDistance).forEach { x in
             // 主体部分path绘制
-            let topPoint = paraCurvePoint(forOffsetX: x+waveDistance/2, item.position, item.curRenderAmplitude, item.narrowExp, false)
-//            var curY = bounds.midY
+            let topPoint: CGPoint
             if item.curRenderAmplitude >= 0 {
+                topPoint = paraCurvePoint(forOffsetX: x+waveDistance/2, item.position, item.curRenderAmplitude, item.narrowExp, false)
                 stride(from: bounds.midY, to: topPoint.y, by: -brickH).forEach { y in
-                    if y+brickH/2 >= topPoint.y {
+                    if y-brickH/2 >= topPoint.y {
                         mainBricksPath.addRect(CGRect(x: topPoint.x - waveDistance/2 + d, y: y-(brickH-1), width: waveDistance-2*d, height: brickH-1))
                     }
                 }
             }
-//            else {
-//                curY = bounds.midY + floor((topPoint.y-bounds.midY)/brickH)*brickH
-//            }
+            else {
+                topPoint = CGPoint(x: bounds.width*displayAreaRate/2 + CGFloat(item.position)*waveDistance - waveW/2 + x + waveDistance/2,
+                                   y: bounds.midY + (-item.curRenderAmplitude/item.amplitude) * waveH)
+            }
             
-//            // 拖尾部分path绘制
-//            if item.hasReachTop {
-//                let maxTopPoint = paraCurvePoint(forOffsetX: x+waveDistance/2, item.position, item.amplitude, item.narrowExp, false)
-//                for i in 0 ..< tailNum {
-//                    curY = curY-brickH
-//                    if curY > maxTopPoint.y && curY < bounds.midY {
-//                        tailBrickPaths[i].addRect(CGRect(x: topPoint.x - waveDistance/2 + d, y: curY+1, width: waveDistance-2*d, height: brickH-1))
-//                    }
-//                }
-//            }
+            // 拖尾部分path绘制
+            if item.hasReachTop {
+                let curMainBrickTopY: CGFloat = bounds.midY - floor((bounds.midY - topPoint.y + brickH/2*(bounds.midY >= topPoint.y ? 1 : -1))/brickH) * brickH
+                let maxTopPoint = paraCurvePoint(forOffsetX: x+waveDistance/2, item.position, item.amplitude, item.narrowExp, false)
+                for i in 0 ..< traceNumber {
+                    let traceTopY = curMainBrickTopY - CGFloat(i+1)*brickH
+                    if traceTopY+brickH/2 > maxTopPoint.y && traceTopY < bounds.midY {
+                        tracePaths[i].addRect(CGRect(x: topPoint.x - waveDistance/2 + d, y: traceTopY+1, width: waveDistance-2*d, height: brickH-1))
+                    }
+                }
+            }
         }
         
         context?.addPath(mainBricksPath)
         context?.fillPath()
         
-//        for i in 0 ..< tailNum {
-//            context?.addPath(tailBrickPaths[i])
-//            context?.setFillColor(UIColor.red.withAlphaComponent(0.7-0.7/CGFloat(tailNum+1)*CGFloat(i)).cgColor)
-//            context?.fillPath()
-//        }
+        for i in 0 ..< traceNumber {
+            context?.addPath(tracePaths[i])
+            context?.setFillColor(item.color.withAlphaComponent(1.0-1.0/CGFloat(traceNumber+1)*CGFloat(i+1)).cgColor)
+            context?.fillPath()
+        }
     }
 }
 
@@ -300,8 +333,12 @@ private extension XTWaveView {
     
     var brickH: CGFloat { return 4 }
     
-    var brickMinAmplitude: CGFloat {
-        return -2*brickH/waveH
+    var traceNumber: Int {
+        return 3
+    }
+    
+    var traceMinAmplitude: CGFloat {
+        return -CGFloat(traceNumber)*brickH/waveH
     }
     
     func middleDash(_ space: CGFloat) -> CGPath {

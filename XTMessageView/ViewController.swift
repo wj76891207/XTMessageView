@@ -21,8 +21,8 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         
-//        let styles: [XTWaveView.Style] = [.stripe, .halo, .brick, .pillar]
-        let styles: [XTWaveView.Style] = [.brick]
+        let styles: [XTWaveView.Style] = [.stripe, .halo, .pillar, .brick, .trace]
+//        let styles: [XTWaveView.Style] = [.trace]
         
         for i in 0 ..< styles.count {
             let waveView = XTWaveView(frame: CGRect(x: 0, y: 50 + CGFloat(i)*120, width: view.bounds.width, height: 100), style: styles[i])
@@ -30,11 +30,11 @@ class ViewController: UIViewController {
             wavesView.append(waveView)
         }
         
-//        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
+        Timer.scheduledTimer(withTimeInterval: 0.1, repeats: true) { timer in
             for waveView in self.wavesView {
                 waveView.addWave()
             }
-//        }
+        }
     }
 }
 
